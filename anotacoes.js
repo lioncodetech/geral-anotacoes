@@ -89,7 +89,8 @@
     }
     .nome:focus { background: #11151d; color: #e6e9ef; }
     .nome::placeholder { color: #6f7789; }
-    .estado { color: #6f7789; font-size: 11px; }
+    /* So' aparece quando a gravacao falhou, entao e cor de aviso e nao de legenda. */
+    .estado { color: #e8a0a0; font-size: 11px; }
     .cabeca button {
       background: none; border: 0; color: #8b93a5; cursor: pointer; font: inherit;
       padding: 1px 5px; border-radius: 6px; line-height: 1.2;
@@ -146,7 +147,6 @@
   const quadros = [];
   let escondido = false;
   let gravacao = 0;
-  let ultimoEstado = '';
 
   const instantaneo = () => ({
     v: 2,
@@ -165,16 +165,18 @@
   });
 
   const dizer = (texto) => {
-    ultimoEstado = texto;
     for (const q of quadros) q.el.querySelector('.estado').textContent = texto;
   };
 
+  /**
+   * O cabecalho so' fala quando nao salvou. Anunciar cada gravacao bem-sucedida enchia a tela de
+   * "salvando…/salvo" a cada pausa de digitacao, e "salvou" e o que ja se espera de um caderno que
+   * promete salvar sozinho - a informacao util e o contrario disso.
+   */
   const salvar = async () => {
-    dizer('salvando…');
     try {
       await guardar(CHAVE, instantaneo());
-      dizer('salvo');
-      setTimeout(() => ultimoEstado === 'salvo' && dizer(''), 1800);
+      dizer('');
     } catch (e) {
       // Falha silenciosa aqui seria perda de texto sem aviso nenhum.
       dizer('não salvou');
@@ -184,7 +186,6 @@
   // texto se a janela fechasse. Meio segundo depois da ultima tecla, e tambem ao sair do campo.
   const agendar = () => {
     clearTimeout(gravacao);
-    dizer('…');
     gravacao = setTimeout(() => {
       gravacao = 0;
       void salvar();

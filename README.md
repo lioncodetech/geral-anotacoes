@@ -18,7 +18,9 @@ só para este tipo de extensão.
 - **×** apaga aquele quadro. Com texto escrito ele pergunta antes, porque não há desfazer.
 - O espaço ao lado do ⠿ é o **nome** do quadro: "compras", "contas", o que ajudar a achar.
 - O texto **salva sozinho**, meio segundo depois da última tecla, e também ao sair do campo e ao
-  fechar a janela. O cabeçalho diz `salvando…` / `salvo`.
+  fechar a janela. O cabeçalho fica calado enquanto dá certo: avisar "salvo" a cada pausa da
+  digitação só enchia a tela com o que já era esperado. Se a gravação falhar, aí sim aparece
+  `não salvou`, e fica até gravar.
 - **⠿** — arraste para mover. O canto de baixo à direita do campo redimensiona.
 
 As teclas digitadas **não chegam ao jogo**. Sem isso, escrever uma anotação dispararia os atalhos
