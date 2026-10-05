@@ -33,6 +33,31 @@ feita**. Rearranjar as views do LionMultInstance muda o tamanho da janela, e os 
 mesma proporção, presos ao mínimo legível e ao que cabe — em vez de continuarem do tamanho da
 janela anterior, pendurados metade para fora.
 
+O **lugar** segue outra regra, e de propósito: o que fica guardado é a distância até a borda mais
+próxima — "20px da direita, 24px de baixo". Proporcional parecia bastar, mas um quadro que não cabe
+é empurrado para dentro da tela, e esse empurrão era definitivo: num quadrante pequeno qualquer
+clique no texto gravava a posição empurrada, e voltar à tela inteira já não devolvia o quadro ao
+canto de onde ele saiu. Pela distância até a borda, quem estava no canto de baixo à direita continua
+lá, em qualquer tamanho de janela, e crescer de novo devolve tudo ao lugar exato.
+
+Quadro fechado não tem medidas, então a posição só é lida e gravada com ele à vista.
+
+## Escrever não dispara os atalhos do site
+
+Um jogo costuma escutar o teclado da página inteira: cada letra é um comando. Escrevendo uma
+anotação, isso abria inventário, mapa e companhia a cada tecla.
+
+A defesa óbvia — o campo parar o evento — **não basta**, e vale saber por quê. Quem escuta **na
+captura** vê a tecla antes dela chegar ao campo, porque na captura o evento desce de cima para
+baixo. E o caderno é montado depois que a página carrega, então o site registrou o listener dele
+primeiro.
+
+Por isso a guarda vive num arquivo próprio, `teclado.js`, que entra em `document_start` — antes dos
+scripts do site — no topo da janela e na captura. Se a tecla nasceu num campo do caderno, ela para
+ali. A letra continua sendo escrita: quem escreve é a ação padrão do navegador, e dela não se mexe.
+
+`Alt` passa de propósito: `Alt+X` e `Alt+Z` são atalhos do próprio caderno.
+
 ## Os quadros são por site e por janela
 
 Os quadros são guardados por site: os que você escreve em `pokepixel.nietore.com` não aparecem em

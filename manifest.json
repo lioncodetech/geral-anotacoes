@@ -1,10 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Geral - anotacoes",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Um caderno de anotacoes flutuante em qualquer site. Alt+X mostra e Alt+Z esconde; o texto e salvo sozinho.",
   "permissions": ["storage"],
   "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["teclado.js"],
+      "run_at": "document_start"
+    },
     {
       "matches": ["http://*/*", "https://*/*"],
       "js": ["anotacoes.js"],

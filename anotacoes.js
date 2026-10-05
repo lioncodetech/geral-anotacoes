@@ -139,9 +139,40 @@
     return {
       l: preso(Math.round(q.l * fx), Math.min(MIN_L, innerWidth - MARGEM), innerWidth - MARGEM),
       a: preso(Math.round(q.a * fy), Math.min(MIN_A, innerHeight - MARGEM), innerHeight - MARGEM),
-      x: Math.round((q.x ?? 0) * fx),
-      y: Math.round((q.y ?? 0) * fy),
     };
+  };
+
+  /**
+   * A posicao e' a distancia ate' a borda mais proxima, nao uma fracao da janela.
+   *
+   * Proporcional parecia bastar, mas `encaixar` recorta o que nao cabe — e o recorte era
+   * definitivo: num quadrante pequeno o quadro era empurrado para dentro, qualquer clique no texto
+   * gravava a posicao empurrada, e voltar a tela inteira ja' nao o devolvia ao canto de onde ele
+   * saiu. Guardada a distancia ate' a borda, quem estava a 20px do canto de baixo a direita
+   * continua a 20px dele em qualquer tamanho de janela.
+   */
+  const cantoDe = (q) => {
+    const r = q.el.getBoundingClientRect();
+    const direita = q.px + r.width / 2 > innerWidth / 2;
+    const baixo = q.py + r.height / 2 > innerHeight / 2;
+    return {
+      cx: Math.round(direita ? innerWidth - (q.px + r.width) : q.px),
+      cy: Math.round(baixo ? innerHeight - (q.py + r.height) : q.py),
+      direita,
+      baixo,
+    };
+  };
+
+  /** Onde o quadro cai nesta janela, pelo canto guardado — ou pelo formato antigo, proporcional. */
+  const posicaoDe = (q, largura, altura) => {
+    if (typeof q.direita === 'boolean')
+      return {
+        x: q.direita ? innerWidth - q.cx - largura : q.cx,
+        y: q.baixo ? innerHeight - q.cy - altura : q.cy,
+      };
+    const fx = q.janelaL ? innerWidth / q.janelaL : 1;
+    const fy = q.janelaA ? innerHeight / q.janelaA : 1;
+    return { x: Math.round((q.x ?? 0) * fx), y: Math.round((q.y ?? 0) * fy) };
   };
 
   const quadros = [];
@@ -157,6 +188,10 @@
       aberto: q.aberto,
       x: q.x,
       y: q.y,
+      cx: q.cx,
+      cy: q.cy,
+      direita: q.direita,
+      baixo: q.baixo,
       l: q.l,
       a: q.a,
       janelaL: q.janelaL,
@@ -212,6 +247,8 @@
 
   const mostrar = (q) => {
     q.el.classList.toggle('aberto', q.aberto && !escondido);
+    // Escondido ele nao tem medidas; e' ao reaparecer que da' para leva-lo ao canto guardado.
+    if (q.aberto && !escondido) aoViewport(q);
     pintarAba();
   };
 
@@ -228,20 +265,26 @@
 
   /** Guarda o que a pessoa escolheu junto com a janela em que escolheu. */
   const gravarGeometria = (q) => {
+    // Quadro fechado nao tem medidas: gravar ai' poria um canto medido de uma caixa de tamanho
+    // zero no lugar do que a pessoa escolheu.
+    if (!q.aberto || escondido) return;
     const r = q.area.getBoundingClientRect();
     q.l = Math.round(r.width);
     q.a = Math.round(r.height);
-    q.x = q.px;
-    q.y = q.py;
+    Object.assign(q, cantoDe(q));
     q.janelaL = innerWidth;
     q.janelaA = innerHeight;
     agendar();
   };
 
   const aoViewport = (q) => {
-    const { l, a, x, y } = escalado(q);
+    if (!q.aberto || escondido) return;
+    const { l, a } = escalado(q);
     q.area.style.width = `${l}px`;
     q.area.style.height = `${a}px`;
+    // O quadro so' tem largura depois do textarea dentro dele; medir antes daria o canto errado.
+    const r = q.el.getBoundingClientRect();
+    const { x, y } = posicaoDe(q, r.width, r.height);
     encaixar(q, x, y);
   };
 
@@ -253,6 +296,10 @@
       aberto: dados.aberto !== false,
       x: dados.x ?? 0,
       y: dados.y ?? 0,
+      cx: dados.cx ?? 0,
+      cy: dados.cy ?? 0,
+      direita: typeof dados.direita === 'boolean' ? dados.direita : undefined,
+      baixo: typeof dados.baixo === 'boolean' ? dados.baixo : undefined,
       l: dados.l || PADRAO_L,
       a: dados.a || PADRAO_A,
       janelaL: dados.janelaL || innerWidth,
@@ -294,8 +341,14 @@
     });
     nome.addEventListener('blur', agora);
 
-    // O jogo escuta o teclado da pagina inteira: sem parar o evento aqui, escrever uma anotacao
-    // dispararia os atalhos do jogo a cada letra.
+    // A marca que `teclado.js` procura. E' ela que faz a guarda de `document_start` reconhecer um
+    // campo do caderno no meio do caminho do evento, e parar a tecla antes de o site a ver.
+    area.__anotacoesCampo = true;
+    nome.__anotacoesCampo = true;
+
+    // A mesma defesa aqui embaixo, para quem escuta o teclado na subida. Nao basta sozinha — um
+    // site que escuta na captura ja' viu a tecla antes de ela chegar ao campo, e e' para esse caso
+    // que existe `teclado.js` —, mas e' o que vale se aquela guarda nao tiver entrado neste frame.
     for (const evento of ['keydown', 'keypress', 'keyup'])
       for (const campo of [area, nome])
         campo.addEventListener(evento, (e) => {
@@ -367,8 +420,10 @@
     // no mesmo canto, o segundo ficaria escondido atras do primeiro e pareceria que nada houve.
     if (novo) {
       const passo = 26 * (quadros.length - 1);
-      q.x = Math.max(0, innerWidth - q.l - 30 - passo);
-      q.y = Math.max(0, innerHeight - q.a - 70 - passo);
+      q.direita = true;
+      q.baixo = true;
+      q.cx = 30 + passo;
+      q.cy = 70 + passo;
       q.janelaL = innerWidth;
       q.janelaA = innerHeight;
     }
