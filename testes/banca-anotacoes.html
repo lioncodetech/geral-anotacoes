@@ -1,0 +1,85 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Banca do caderno de anotações</title>
+<!--
+  Banca do caderno, fora de qualquer jogo.
+
+  O que ela prova: que o quadro se move pelo **cabecalho inteiro** (e nao so' pela alca de seis
+  pixels), que o **botao `anotações` tambem se move**, que arrastar o botao nao abre os quadros, e
+  que o lugar escolhido para os dois volta onde foi deixado — inclusive depois de a janela mudar de
+  tamanho, que e' o que acontece a cada rearranjo das views do LionMultInstance.
+
+  Nao ha' `chrome.storage` aqui, por isso o caderno cai no armazenamento da propria pagina: e'
+  exatamente o caminho de reserva que existe no codigo, e serve para ver o que ficou guardado.
+
+  Abra pelo servidor estatico; por `file://` o navegador recusa carregar `../anotacoes.js`.
+-->
+<style>
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #223048;
+    font-family: system-ui, sans-serif;
+    color: #d8e0ec;
+  }
+  .nota {
+    position: fixed;
+    left: 16px;
+    top: 16px;
+    max-width: 30em;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  code {
+    background: #0003;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+  button.teste {
+    background: #0004;
+    color: inherit;
+    border: 1px solid #ffffff33;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font: inherit;
+    cursor: pointer;
+    margin: 0 6px 6px 0;
+  }
+  pre {
+    background: #0004;
+    padding: 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    max-width: 32em;
+    white-space: pre-wrap;
+  }
+</style>
+<div class="nota">
+  <p>
+    Banca do <b>caderno de anotações</b>. <code>Alt+X</code> mostra, <code>Alt+Z</code> esconde.
+    Arraste o quadro pelo <b>cabeçalho</b> e o botão <b>anotações</b> para onde quiser: o lugar dos
+    dois é guardado pela distância até a borda mais próxima.
+  </p>
+  <p>
+    <button class="teste" data-ver>Ver o que está guardado</button>
+    <button class="teste" data-limpar>Limpar</button>
+  </p>
+  <pre data-saida>—</pre>
+</div>
+<script>
+  const chave = `geral-anotacoes:${location.hostname || 'local'}`;
+  document.querySelector('[data-ver]').addEventListener('click', () => {
+    const bruto = localStorage.getItem(chave);
+    document.querySelector('[data-saida]').textContent = bruto
+      ? JSON.stringify(JSON.parse(bruto), null, 1)
+      : '— nada guardado —';
+  });
+  document.querySelector('[data-limpar]').addEventListener('click', () => {
+    localStorage.removeItem(chave);
+    document.querySelector('[data-saida]').textContent = 'limpo — recarregue';
+  });
+
+  const script = document.createElement('script');
+  script.src = `../anotacoes.js?t=${Date.now()}`;
+  document.head.append(script);
+</script>

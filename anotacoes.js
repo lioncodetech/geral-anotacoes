@@ -45,6 +45,32 @@
   const PADRAO_L = 260;
   const PADRAO_A = 170;
   const preso = (valor, minimo, maximo) => Math.max(minimo, Math.min(maximo, valor));
+  /**
+   * Uma view escondida mede zero por zero.
+   *
+   * Colocar seja o que for ai' prende tudo no canto de cima a' esquerda, e medir ai' gravaria esse
+   * canto por cima do que a pessoa escolheu — medido na banca, com o painel do navegador oculto:
+   * `innerWidth` era 0 e o botao saltava para 0,0.
+   *
+   * Mas recusar e ficar por ai' tambem nao serve: o que nasceu enquanto a janela media zero ficava
+   * parado no canto de baixo a' direita, ignorando o lugar guardado. Nem o evento `resize` nem um
+   * observador do documento acordam a tempo, porque quem mede zero e' a janela, nao o documento.
+   * Entao espera-se: de um quarto em quarto de segundo, ate' haver medidas.
+   */
+  const temMedidas = () => innerWidth > 0 && innerHeight > 0;
+  let espreita = 0;
+  const janelaMedida = () => {
+    if (temMedidas()) return true;
+    espreita =
+      espreita ||
+      setInterval(() => {
+        if (!temMedidas()) return;
+        clearInterval(espreita);
+        espreita = 0;
+        pedirAjuste();
+      }, 250);
+    return false;
+  };
 
   // Shadow root: isto entra em sites que nao conhecemos, e o CSS de uma pagina qualquer podia
   // esticar, esconder ou repintar o caderno. Aqui dentro nada do site alcanca.
@@ -82,9 +108,11 @@
       display: flex; align-items: center; gap: 4px;
       padding: 5px 6px; border-bottom: 1px solid #3a4152; user-select: none;
     }
-    .alca { color: #8b93a5; font-size: 15px; cursor: move; touch-action: none; padding: 0 2px; }
+    /* O cabecalho inteiro move o quadro; a alca fica como a parte que se ve que se agarra. */
+    .cabeca { cursor: move; touch-action: none; }
+    .alca { color: #8b93a5; font-size: 15px; padding: 0 2px; }
     .nome {
-      flex: 1; min-width: 40px; background: none; border: 0; outline: 0; padding: 2px 4px;
+      flex: 1; min-width: 40px; cursor: text; background: none; border: 0; outline: 0; padding: 2px 4px;
       color: #c3c9d6; font: inherit; border-radius: 5px;
     }
     .nome:focus { background: #11151d; color: #e6e9ef; }
@@ -108,6 +136,8 @@
     .aba {
       display: none; align-items: center; gap: 6px; padding: 7px 11px;
       border: 1px solid #3a4152; cursor: pointer; font: inherit; color: #e6e9ef;
+      /* Tambem se arrasta: sem isto o toque rolava a pagina em vez de mover o botao. */
+      touch-action: none; user-select: none;
     }
     .aba.aberta { display: inline-flex; }
     .aba:hover { background: #2a3243; }
@@ -151,13 +181,13 @@
    * saiu. Guardada a distancia ate' a borda, quem estava a 20px do canto de baixo a direita
    * continua a 20px dele em qualquer tamanho de janela.
    */
-  const cantoDe = (q) => {
-    const r = q.el.getBoundingClientRect();
-    const direita = q.px + r.width / 2 > innerWidth / 2;
-    const baixo = q.py + r.height / 2 > innerHeight / 2;
+  const cantoDe = (el, px, py) => {
+    const r = el.getBoundingClientRect();
+    const direita = px + r.width / 2 > innerWidth / 2;
+    const baixo = py + r.height / 2 > innerHeight / 2;
     return {
-      cx: Math.round(direita ? innerWidth - (q.px + r.width) : q.px),
-      cy: Math.round(baixo ? innerHeight - (q.py + r.height) : q.py),
+      cx: Math.round(direita ? innerWidth - (px + r.width) : px),
+      cy: Math.round(baixo ? innerHeight - (py + r.height) : py),
       direita,
       baixo,
     };
@@ -179,8 +209,22 @@
   let escondido = false;
   let gravacao = 0;
 
+  // O botao `anotações` tambem se muda de lugar, e pela mesma regra dos quadros: o que fica
+  // guardado e a distancia ate a borda mais proxima, para ele voltar ao canto escolhido em
+  // qualquer tamanho de janela. O padrao e o canto de baixo a direita, como era antes.
+  const ABA_PADRAO = { cx: 14, cy: 14, direita: true, baixo: true };
+  const abaCanto = { ...ABA_PADRAO, janelaL: innerWidth, janelaA: innerHeight, px: 0, py: 0 };
+
   const instantaneo = () => ({
     v: 2,
+    aba: {
+      cx: abaCanto.cx,
+      cy: abaCanto.cy,
+      direita: abaCanto.direita,
+      baixo: abaCanto.baixo,
+      janelaL: abaCanto.janelaL,
+      janelaA: abaCanto.janelaA,
+    },
     quadros: quadros.map((q) => ({
       id: q.id,
       nome: q.nome,
@@ -240,9 +284,18 @@
     aba.classList.toggle('aberta', !escondido && abertos === 0);
     conta.textContent = quadros.length > 1 ? `(${quadros.length})` : '';
     ponto.style.visibility = quadros.some((q) => q.texto.trim()) ? 'visible' : 'hidden';
+    // Escondido ele nao tem medidas: e ao aparecer que da para leva-lo ao canto guardado.
+    if (aba.classList.contains('aberta')) aoViewportAba();
     aba.title = quadros.length
       ? `Abrir ${quadros.length === 1 ? 'a anotação' : `as ${quadros.length} anotações`} (Alt+X)`
       : 'Criar uma anotação (Alt+X)';
+  };
+
+  const aoViewportAba = () => {
+    if (!janelaMedida()) return;
+    const r = aba.getBoundingClientRect();
+    const { x, y } = posicaoDe(abaCanto, r.width, r.height);
+    encaixarEl(aba, abaCanto, x, y);
   };
 
   const mostrar = (q) => {
@@ -252,33 +305,98 @@
     pintarAba();
   };
 
-  /** Deixa o quadro inteiro dentro da janela, inclusive depois de a janela encolher. */
-  const encaixar = (q, x = q.px, y = q.py) => {
-    const r = q.el.getBoundingClientRect();
-    q.px = preso(x, 0, Math.max(0, innerWidth - r.width));
-    q.py = preso(y, 0, Math.max(0, innerHeight - r.height));
-    q.el.style.left = `${q.px}px`;
-    q.el.style.top = `${q.py}px`;
-    q.el.style.right = 'auto';
-    q.el.style.bottom = 'auto';
+  /**
+   * Deixa o elemento inteiro dentro da janela, inclusive depois de a janela encolher.
+   *
+   * `caixa` e quem guarda a posicao aplicada (`px`, `py`) — um quadro, ou o botao. O mesmo codigo
+   * serve aos dois porque a regra de nao deixar nada pendurado para fora da janela e a mesma.
+   */
+  const encaixarEl = (el, caixa, x = caixa.px, y = caixa.py) => {
+    const r = el.getBoundingClientRect();
+    caixa.px = preso(x, 0, Math.max(0, innerWidth - r.width));
+    caixa.py = preso(y, 0, Math.max(0, innerHeight - r.height));
+    el.style.left = `${caixa.px}px`;
+    el.style.top = `${caixa.py}px`;
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+  };
+  const encaixar = (q, x = q.px, y = q.py) => encaixarEl(q.el, q, x, y);
+
+  /**
+   * Arrastar por um elemento qualquer.
+   *
+   * `limiar` existe para o botao: sem ele, soltar o ponteiro no fim de um arrasto ainda contava
+   * como clique, e mover o botao abria os quadros todos. Com quatro pixels de folga, um clique
+   * continua clique e um arrasto nao abre nada.
+   */
+  const arrastavel = (pega, { caixa, mover, soltou, ignorar, limiar = 0 }) => {
+    let dx = 0;
+    let dy = 0;
+    let ox = 0;
+    let oy = 0;
+    let puxando = false;
+    let andou = false;
+    pega.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || ignorar?.(e)) return;
+      const r = caixa();
+      dx = e.clientX - r.left;
+      dy = e.clientY - r.top;
+      ox = e.clientX;
+      oy = e.clientY;
+      puxando = true;
+      andou = false;
+      try {
+        pega.setPointerCapture?.(e.pointerId);
+      } catch (err) {
+        // Ponteiro que o navegador ja' nao reconhece: o arrasto continua pelos eventos normais.
+      }
+      e.preventDefault();
+    });
+    pega.addEventListener('pointermove', (e) => {
+      if (!puxando) return;
+      if (!andou && Math.hypot(e.clientX - ox, e.clientY - oy) < limiar) return;
+      andou = true;
+      mover(e.clientX - dx, e.clientY - dy);
+    });
+    const soltar = (e) => {
+      if (!puxando) return;
+      puxando = false;
+      try {
+        pega.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        /* ponteiro ja solto */
+      }
+      if (andou) soltou();
+    };
+    pega.addEventListener('pointerup', soltar);
+    pega.addEventListener('pointercancel', soltar);
+    // `limpar` existe porque quem pergunta e' o clique, e nem todo clique traz um `pointerdown`
+    // antes: `Enter` no botao com foco manda um clique sozinho. Sem limpar, o botao ficava mudo
+    // ao teclado depois do primeiro arrasto.
+    return {
+      moveu: () => andou,
+      limpar: () => {
+        andou = false;
+      },
+    };
   };
 
   /** Guarda o que a pessoa escolheu junto com a janela em que escolheu. */
   const gravarGeometria = (q) => {
     // Quadro fechado nao tem medidas: gravar ai' poria um canto medido de uma caixa de tamanho
     // zero no lugar do que a pessoa escolheu.
-    if (!q.aberto || escondido) return;
+    if (!q.aberto || escondido || !janelaMedida()) return;
     const r = q.area.getBoundingClientRect();
     q.l = Math.round(r.width);
     q.a = Math.round(r.height);
-    Object.assign(q, cantoDe(q));
+    Object.assign(q, cantoDe(q.el, q.px, q.py));
     q.janelaL = innerWidth;
     q.janelaA = innerHeight;
     agendar();
   };
 
   const aoViewport = (q) => {
-    if (!q.aberto || escondido) return;
+    if (!q.aberto || escondido || !janelaMedida()) return;
     const { l, a } = escalado(q);
     q.area.style.width = `${l}px`;
     q.area.style.height = `${a}px`;
@@ -386,33 +504,14 @@
       agora();
     };
 
-    let dx = 0;
-    let dy = 0;
-    let arrastando = false;
-    const alca = el.querySelector('.alca');
-    alca.addEventListener('pointerdown', (e) => {
-      const r = el.getBoundingClientRect();
-      dx = e.clientX - r.left;
-      dy = e.clientY - r.top;
-      arrastando = true;
-      alca.setPointerCapture(e.pointerId);
-      e.preventDefault();
+    // O cabecalho inteiro arrasta, nao so a alca, que tem seis pixels de largura e obrigava a
+    // acertar nela. Os botoes e o campo de nome ficam de fora: senao, renomear seria mover.
+    arrastavel(el.querySelector('.cabeca'), {
+      caixa: () => el.getBoundingClientRect(),
+      ignorar: (e) => Boolean(e.target.closest('button, input')),
+      mover: (x, y) => encaixar(q, x, y),
+      soltou: () => gravarGeometria(q),
     });
-    alca.addEventListener('pointermove', (e) => {
-      if (arrastando) encaixar(q, e.clientX - dx, e.clientY - dy);
-    });
-    const soltar = (e) => {
-      if (!arrastando) return;
-      arrastando = false;
-      try {
-        alca.releasePointerCapture(e.pointerId);
-      } catch (err) {
-        /* ponteiro ja solto */
-      }
-      gravarGeometria(q);
-    };
-    alca.addEventListener('pointerup', soltar);
-    alca.addEventListener('pointercancel', soltar);
 
     sombra.appendChild(el);
     quadros.push(q);
@@ -451,15 +550,37 @@
     quadros[quadros.length - 1].area.focus();
     agendar();
   };
-  aba.onclick = abrirTodos;
+  const puxarAba = arrastavel(aba, {
+    caixa: () => aba.getBoundingClientRect(),
+    limiar: 4,
+    mover: (x, y) => encaixarEl(aba, abaCanto, x, y),
+    soltou: () => {
+      Object.assign(abaCanto, cantoDe(aba, abaCanto.px, abaCanto.py));
+      abaCanto.janelaL = innerWidth;
+      abaCanto.janelaA = innerHeight;
+      agendar();
+    },
+  });
+  // Arrastar o botao nao pode abrir os quadros no fim do movimento.
+  aba.onclick = () => {
+    const arrastou = puxarAba.moveu();
+    puxarAba.limpar();
+    if (!arrastou) abrirTodos();
+  };
 
   // A janela mudou de tamanho — rearranjo das views, ou a janela do app redimensionada. Cada
   // quadro volta na proporcao da janela nova, em vez de ficar do tamanho da janela anterior.
   let ajuste = 0;
-  addEventListener('resize', () => {
+  const pedirAjuste = () => {
     clearTimeout(ajuste);
-    ajuste = setTimeout(() => quadros.forEach(aoViewport), 150);
-  });
+    ajuste = setTimeout(() => {
+      quadros.forEach(aoViewport);
+      if (aba.classList.contains('aberta')) aoViewportAba();
+    }, 150);
+  };
+  addEventListener('resize', pedirAjuste);
+  // E o observador do documento, para o rearranjo que nao dispara `resize` nenhum.
+  new ResizeObserver(pedirAjuste).observe(document.documentElement);
 
   // Alt+Z e Alt+X, o mesmo par de esconder e mostrar das outras extensoes. Escondido significa
   // nada na tela: nem os quadros, nem o botao.
@@ -490,6 +611,17 @@
 
   void (async () => {
     const guardados = await ler(CHAVE, null);
+    // Antes dos quadros: criar um quadro ja repinta o botao, e repintar o botao ja o coloca.
+    const lugarDaAba = guardados?.aba;
+    if (lugarDaAba && typeof lugarDaAba.cx === 'number')
+      Object.assign(abaCanto, {
+        cx: lugarDaAba.cx,
+        cy: Number(lugarDaAba.cy) || 0,
+        direita: lugarDaAba.direita !== false,
+        baixo: lugarDaAba.baixo !== false,
+        janelaL: lugarDaAba.janelaL || innerWidth,
+        janelaA: lugarDaAba.janelaA || innerHeight,
+      });
     if (guardados && Array.isArray(guardados.quadros)) {
       for (const dados of guardados.quadros) criarQuadro(dados);
     } else {

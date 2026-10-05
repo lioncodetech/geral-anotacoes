@@ -21,7 +21,11 @@ só para este tipo de extensão.
   fechar a janela. O cabeçalho fica calado enquanto dá certo: avisar "salvo" a cada pausa da
   digitação só enchia a tela com o que já era esperado. Se a gravação falhar, aí sim aparece
   `não salvou`, e fica até gravar.
-- **⠿** — arraste para mover. O canto de baixo à direita do campo redimensiona.
+- **Arraste pelo cabeçalho** para mover o quadro — em qualquer parte dele, não só no ⠿. O campo de
+  nome e os botões ficam de fora, senão renomear seria mover. O canto de baixo à direita do campo
+  de texto redimensiona.
+- **O botão `anotações` também se move.** Arraste-o para onde não atrapalhe; o lugar fica guardado.
+  Arrastar não abre os quadros: só um clique parado conta como clique.
 
 As teclas digitadas **não chegam ao jogo**. Sem isso, escrever uma anotação dispararia os atalhos
 da página a cada letra. Alt+X e Alt+Z também param aqui, pelo mesmo motivo.
@@ -40,7 +44,15 @@ clique no texto gravava a posição empurrada, e voltar à tela inteira já não
 canto de onde ele saiu. Pela distância até a borda, quem estava no canto de baixo à direita continua
 lá, em qualquer tamanho de janela, e crescer de novo devolve tudo ao lugar exato.
 
-Quadro fechado não tem medidas, então a posição só é lida e gravada com ele à vista.
+Quadro fechado não tem medidas, então a posição só é lida e gravada com ele à vista. Pela mesma
+razão, **nada é colocado nem medido enquanto a janela mede zero por zero** — o que acontece com uma
+view escondida. Sem essa guarda, tudo era preso no canto de cima à esquerda; com ela sozinha, o que
+nascesse nesse estado ficava parado no canto errado, porque nem sempre chega um `resize` quando a
+view reaparece. Por isso há também um observador do tamanho do documento: quando a janela volta a
+ter medidas, os quadros e o botão vão para o lugar guardado.
+
+O botão `anotações` segue a mesma regra de lugar dos quadros — distância até a borda mais próxima,
+guardada junto com a janela em que foi escolhida.
 
 ## Escrever não dispara os atalhos do site
 
@@ -70,7 +82,7 @@ anotação escrita na janela da conta A não aparece na janela da conta B, mesmo
 ## O que ela acessa
 
 Guarda, de cada quadro, cinco coisas: o texto, o nome, a posição, o tamanho (junto com o tamanho
-da janela em que foi escolhido) e se estava aberto. Quando o navegador oferece armazenamento
+da janela em que foi escolhido) e se estava aberto. Guarda também o lugar do botão `anotações`. Quando o navegador oferece armazenamento
 próprio de extensão, é lá que ficam — fora do alcance da página.
 Quando não oferece, cai para o armazenamento da própria página, que **a página consegue ler**.
 
