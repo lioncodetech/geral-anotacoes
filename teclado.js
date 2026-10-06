@@ -32,7 +32,7 @@
     addEventListener(
       tipo,
       (evento) => {
-        // Alt passa: Alt+X e Alt+Z sao atalhos do proprio caderno, tratados mais adiante. Parar
+        // Alt passa: Alt+O e Alt+P sao atalhos do proprio caderno, tratados mais adiante. Parar
         // tudo aqui calaria a extensao para ela mesma.
         if (!evento.isTrusted || evento.altKey || !doCaderno(evento)) return;
         evento.stopImmediatePropagation();

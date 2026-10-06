@@ -287,8 +287,8 @@
     // Escondido ele nao tem medidas: e ao aparecer que da para leva-lo ao canto guardado.
     if (aba.classList.contains('aberta')) aoViewportAba();
     aba.title = quadros.length
-      ? `Abrir ${quadros.length === 1 ? 'a anotação' : `as ${quadros.length} anotações`} (Alt+X)`
-      : 'Criar uma anotação (Alt+X)';
+      ? `Abrir ${quadros.length === 1 ? 'a anotação' : `as ${quadros.length} anotações`} (Alt+P)`
+      : 'Criar uma anotação (Alt+P)';
   };
 
   const aoViewportAba = () => {
@@ -435,7 +435,7 @@
         <span class="estado"></span>
         <button class="novo" title="Outro quadro de anotações">+</button>
         <button class="apagar" title="Apagar este quadro">×</button>
-        <button class="fechar" title="Fechar este quadro (Alt+Z)">—</button>
+        <button class="fechar" title="Fechar este quadro (Alt+O)">—</button>
       </div>`;
     const area = document.createElement('textarea');
     area.placeholder = 'Escreva aqui. Salva sozinho.';
@@ -582,19 +582,25 @@
   // E o observador do documento, para o rearranjo que nao dispara `resize` nenhum.
   new ResizeObserver(pedirAjuste).observe(document.documentElement);
 
-  // Alt+Z e Alt+X, o mesmo par de esconder e mostrar das outras extensoes. Escondido significa
-  // nada na tela: nem os quadros, nem o botao.
+  // Alt+O esconde e Alt+P mostra: o mesmo desenho de duas teclas vizinhas das outras extensoes,
+  // uma para cada lado, sem alternar. Escondido significa nada na tela: nem os quadros, nem o botao.
+  //
+  // **ERAM Alt+Z e Alt+X, e deixaram de ser.** Este caderno roda em *qualquer site*, e o pacote do
+  // PokePixel passou a usar esse mesmo par para esconder e mostrar as janelas dele — invertido, por
+  // cima. Duas extensoes na mesma pagina disputando a mesma tecla nao da' erro nenhum: da' o pior
+  // relato que existe, o de que "as vezes funciona". Quem mudou foi o caderno, que e' o mais novo
+  // dos dois e tem menos memoria muscular por tras.
   addEventListener(
     'keydown',
     (e) => {
       if (!e.altKey || e.ctrlKey || e.metaKey) return;
-      const tecla = e.code === 'KeyZ' ? 'z' : e.code === 'KeyX' ? 'x' : '';
+      const tecla = e.code === 'KeyO' ? 'o' : e.code === 'KeyP' ? 'p' : '';
       if (!tecla) return;
       e.preventDefault();
       // O atalho e nosso e para aqui: deixar passar dispararia tambem o que o jogo tiver em Alt.
       e.stopPropagation();
-      if (tecla === 'x') return abrirTodos();
-      // Alt+Z fecha os quadros abertos e, de novo, esconde tambem o botao.
+      if (tecla === 'p') return abrirTodos();
+      // Alt+O fecha os quadros abertos e, de novo, esconde tambem o botao.
       if (quadros.some((q) => q.aberto)) {
         for (const q of quadros) {
           q.aberto = false;

@@ -8,8 +8,8 @@ só para este tipo de extensão.
 
 ## Como usar
 
-- **Alt+X** — mostra. Sem nenhuma anotação ainda, cria o primeiro quadro já aberto.
-- **Alt+Z** — fecha os quadros abertos e deixa só o botão `anotações` no canto. Apertado de novo,
+- **Alt+P** — mostra. Sem nenhuma anotação ainda, cria o primeiro quadro já aberto.
+- **Alt+O** — fecha os quadros abertos e deixa só o botão `anotações` no canto. Apertado de novo,
   esconde também o botão: a tela fica limpa.
 - **+** no cabeçalho — mais um quadro. Dá para ter quantos quiser na mesma janela, cada um com o
   seu texto, o seu nome, o seu tamanho e o seu lugar na tela. Cada novo nasce um pouco à frente do
@@ -28,7 +28,7 @@ só para este tipo de extensão.
   Arrastar não abre os quadros: só um clique parado conta como clique.
 
 As teclas digitadas **não chegam ao jogo**. Sem isso, escrever uma anotação dispararia os atalhos
-da página a cada letra. Alt+X e Alt+Z também param aqui, pelo mesmo motivo.
+da página a cada letra. Alt+O e Alt+P também param aqui, pelo mesmo motivo.
 
 ## Acompanha o tamanho da janela
 
@@ -68,7 +68,20 @@ Por isso a guarda vive num arquivo próprio, `teclado.js`, que entra em `documen
 scripts do site — no topo da janela e na captura. Se a tecla nasceu num campo do caderno, ela para
 ali. A letra continua sendo escrita: quem escreve é a ação padrão do navegador, e dela não se mexe.
 
-`Alt` passa de propósito: `Alt+X` e `Alt+Z` são atalhos do próprio caderno.
+`Alt` passa de propósito: `Alt+O` e `Alt+P` são atalhos do próprio caderno.
+
+## Por que não é mais Alt+X e Alt+Z
+
+Era, até a 1.0.3. Este caderno roda em **qualquer site**, e o pacote *PokePixel — qualidade de vida*
+passou a usar esse mesmo par para esconder e mostrar as janelas dele — invertido, ainda por cima:
+lá o Alt+Z esconde e o Alt+X mostra, aqui era o contrário.
+
+Duas extensões disputando a mesma tecla na mesma página não dão erro nenhum. Dão o pior relato que
+existe: o de que *"às vezes funciona"*. Quem mudou foi o caderno, que é o mais novo dos dois e tem
+menos memória muscular por trás.
+
+`Alt+O` e `Alt+P` são vizinhas, estão livres em todo o catálogo do LionMultInstance e não disputam
+com os atalhos do próprio aplicativo (Alt+1..4, Alt+M, Alt+R).
 
 ## Os quadros são por site e por janela
 

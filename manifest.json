@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Geral - anotacoes",
-  "version": "1.0.3",
-  "description": "Um caderno de anotacoes flutuante em qualquer site. Alt+X mostra e Alt+Z esconde; o texto e salvo sozinho.",
+  "version": "1.0.4",
+  "description": "Um caderno de anotacoes flutuante em qualquer site. Alt+P mostra e Alt+O esconde; o texto e salvo sozinho.",
   "permissions": ["storage"],
   "content_scripts": [
     {
